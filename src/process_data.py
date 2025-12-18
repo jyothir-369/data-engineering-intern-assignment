@@ -1,62 +1,86 @@
-import pandas as pd
+import pandas as pandas
 import os
 
+def load_stock_data(file_path):
+    stock_data = pandas.read_csv(file_path, parse_dates=["date"])
+    stock_data = stock_data.sort_values(["ticker", "date"])
+    return stock_data
 
-def fetch_data(file_location: str) -> pd.DataFrame:
-    dataframe = pd.read_csv(file_location, parse_dates=["date"])
-    dataframe = dataframe.sort_values(["ticker", "date"])
-    return dataframe
+def get_monthly_data(stock_data):
+    all_tickers = []
 
+    for ticker, data_for_one_ticker in stock_data.groupby("ticker"):
+        data_for_one_ticker = data_for_one_ticker.set_index("date")
 
-def summarize_and_compute(dataframe: pd.DataFrame) -> pd.DataFrame:
-    result = []
-
-    for ticker, ticker_dataframe in dataframe.groupby("ticker"):
-        ticker_dataframe = ticker_dataframe.set_index("date")
-
-        monthly = (
-            ticker_dataframe
-            .resample("ME") 
-            .agg(
-                opening_price=("open", "first"),
-                highest_price=("high", "max"),
-                lowest_price=("low", "min"),
-                closest_price=("close", "last"),
-                trade_volume=("volume", "sum"),
-                adjusted_price=("adjclose", "last"),
-            )
-            .reset_index()
+        monthly = data_for_one_ticker.resample("ME").agg(
+            open=("open", "first"),
+            high=("high", "max"),
+            low=("low", "min"),
+            close=("close", "last"),
+            volume=("volume", "sum")
         )
 
-        monthly["simple_ma_10"] = monthly["closest_price"].rolling(10).mean()
-        monthly["simple_ma_20"] = monthly["closest_price"].rolling(20).mean()
+        monthly["SMA_10"] = monthly["close"].rolling(10).mean()
+        monthly["SMA_20"] = monthly["close"].rolling(20).mean()
 
-        monthly["exp_ma_10"] = monthly["closest_price"].ewm(span=10, adjust=False).mean()
-        monthly["exp_ma_20"] = monthly["closest_price"].ewm(span=20, adjust=False).mean()
+        def calculate_ema(prices, period, sma_values):
+            ema_list = []
+            multiplier = 2 / (period + 1)
+            for i in range(len(prices)):
+                if i == 0:
+                    first_value = prices.iloc[i] if pandas.isna(sma_values.iloc[i]) else sma_values.iloc[i]
+                    ema_list.append(first_value)
+                else:
+                    ema_list.append((prices.iloc[i] * multiplier) + (ema_list[i - 1] * (1 - multiplier)))
+            return pandas.Series(ema_list, index=prices.index)
+
+        monthly["EMA_10"] = calculate_ema(monthly["close"], 10, monthly["SMA_10"])
+        monthly["EMA_20"] = calculate_ema(monthly["close"], 20, monthly["SMA_20"])
 
         monthly["ticker"] = ticker
-        result.append(monthly)
+        monthly = monthly.reset_index()
 
-    return pd.concat(result, ignore_index=True)
+       
+        if len(monthly) > 24:
+            monthly = monthly.tail(24)
+        elif len(monthly) < 24:
+           
+            missing_rows = 24 - len(monthly)
+            empty_rows = pandas.DataFrame(
+                {
+                    "date": [pandas.NaT]*missing_rows,
+                    "open": [pandas.NA]*missing_rows,
+                    "high": [pandas.NA]*missing_rows,
+                    "low": [pandas.NA]*missing_rows,
+                    "close": [pandas.NA]*missing_rows,
+                    "volume": [pandas.NA]*missing_rows,
+                    "SMA_10": [pandas.NA]*missing_rows,
+                    "SMA_20": [pandas.NA]*missing_rows,
+                    "EMA_10": [pandas.NA]*missing_rows,
+                    "EMA_20": [pandas.NA]*missing_rows,
+                    "ticker": [ticker]*missing_rows
+                }
+            )
+            monthly = pandas.concat([empty_rows, monthly], ignore_index=True)
 
+        all_tickers.append(monthly)
 
-def save_results(dataframe: pd.DataFrame, output_dir: str) -> None:
-    os.makedirs(output_dir, exist_ok=True)
+    combined_data = pandas.concat(all_tickers, ignore_index=True)
+    return combined_data
 
-    for ticker, ticker_dataframe in dataframe.groupby("ticker"):
-        output_path = os.path.join(output_dir, f"result_{ticker}.csv")
-        ticker_dataframe.to_csv(output_path, index=False)
+def save_csv_files(monthly_data, output_folder):
+    os.makedirs(output_folder, exist_ok=True)
+    for ticker, data_for_one_ticker in monthly_data.groupby("ticker"):
+        file_path = os.path.join(output_folder, f"result_{ticker}.csv")
+        data_for_one_ticker.to_csv(file_path, index=False)
 
+def run():
+    input_file = "data/stock_data.csv"
+    output_folder = "output"
 
-def execute():
-    source_file = "data/stock_data.csv"
-    destination_dir = "output"
-
-    raw_data = fetch_data(source_file)
-    final_data = summarize_and_compute(raw_data)
-
-    save_results(final_data, destination_dir)
-
+    daily_stock_data = load_stock_data(input_file)
+    monthly_stock_data = get_monthly_data(daily_stock_data)
+    save_csv_files(monthly_stock_data, output_folder)
 
 if __name__ == "__main__":
-    execute()
+    run()
