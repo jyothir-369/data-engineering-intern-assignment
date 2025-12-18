@@ -208,7 +208,7 @@ result_AMZN.csv
 
 **Jyothir Raghavalu Bhogi**
 📌 Data Engineering & Analytics
-🔗 [LinkedIn](https://www.linkedin.com/)
+🔗 [[LinkedIn](https://www.linkedin.com/)](https://www.linkedin.com/in/bhogi-jyothir-raghavalu/)
 
 ---
 
