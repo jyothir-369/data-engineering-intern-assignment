@@ -1,114 +1,138 @@
-# Data Engineering Intern Assignment – Monthly Stock Data Aggregation
+# 📊 Data Engineering Intern Assignment
 
-## Overview
-
-This project transforms a **2-year daily stock price dataset** for **10 major stock tickers** into **monthly aggregated records**. It accurately computes **OHLC (Open, High, Low, Close)** values per month and derives key **technical indicators** using **only Pandas**, without relying on any third-party technical analysis libraries.
-
-### Final Output
-
-* One CSV file per ticker
-* Exactly **24 monthly records** per file
+## Monthly Stock Data Aggregation & Technical Indicator Pipeline
 
 ---
 
-## Project Structure
+## 🚀 Project Overview
+
+This project demonstrates a **production-quality data engineering pipeline** that converts **2 years of daily stock market data** into **clean, analytics-ready monthly datasets**.
+
+Using **pure Pandas (no TA libraries)**, the pipeline:
+
+* Aggregates daily OHLCV data into **monthly OHLC records**
+* Computes widely used **technical indicators**
+* Outputs **partitioned, standardized CSV files** ready for downstream analytics or ML workflows
+
+### ✅ Final Deliverables
+
+* **One CSV per ticker**
+* **Exactly 24 monthly records per file**
+* **Consistent schema across all outputs**
+
+---
+
+## 🧠 Key Highlights
+
+* 📈 Accurate **OHLC aggregation logic**
+* 🧮 Manual implementation of **SMA & EMA indicators**
+* ⚡ Efficient, vectorized Pandas operations
+* 📁 Clean, partitioned output design (industry best practice)
+* 🚫 Zero reliance on third-party technical analysis libraries
+
+---
+
+## 📂 Project Structure
 
 ```
 data-engineering-intern-assignment/
 ├── data/
-│   └── stock_data.csv          # Input dataset
+│   └── stock_data.csv          # Raw daily stock price data
 ├── src/
 │   ├── __init__.py
-│   └── process_data.py         # Core data processing logic
+│   └── process_data.py         # Core data transformation pipeline
 ├── output/
 │   └── result_<TICKER>.csv     # e.g., result_AAPL.csv
 ├── README.md                   # Project documentation
-├── requirements.txt            # Dependencies
+├── requirements.txt            # Python dependencies
 └── .gitignore
 ```
 
 ---
 
-## Input Data
+## 📥 Input Dataset
 
-**File:** `data/stock_data.csv`
+**Location:** `data/stock_data.csv`
 
-**Columns:**
+### Dataset Schema
 
-* `date`
-* `volume`
-* `open`
-* `high`
-* `low`
-* `close`
-* `adjclose`
-* `ticker`
+| Column   | Description              |
+| -------- | ------------------------ |
+| date     | Trading date             |
+| open     | Opening price            |
+| high     | Highest price of the day |
+| low      | Lowest price of the day  |
+| close    | Closing price            |
+| adjclose | Adjusted closing price   |
+| volume   | Daily trading volume     |
+| ticker   | Stock ticker symbol      |
 
-**Tickers:**
+### Supported Tickers
 
 ```
 AAPL, AMD, AMZN, AVGO, CSCO, MSFT, NFLX, PEP, TMUS, TSLA
 ```
 
-**Frequency:** Daily
-**Coverage:** 2 full years → **24 complete months**
+* **Frequency:** Daily
+* **Coverage:** 2 full years
+* **Expected Output:** 24 complete months per ticker
 
 ---
 
-## Processing Logic
+## ⚙️ Data Processing Logic
 
-### Monthly Aggregation
+### 📆 Monthly OHLC Aggregation
 
-Daily stock data is resampled to **monthly frequency** using the following rules:
+Daily stock records are resampled into **monthly intervals** using industry-standard financial rules:
 
-| Field  | Aggregation Rule                                  |
-| ------ | ------------------------------------------------- |
-| Open   | Price from the **first trading day** of the month |
-| Close  | Price from the **last trading day** of the month  |
-| High   | **Maximum** high price during the month           |
-| Low    | **Minimum** low price during the month            |
-| Volume | **Sum** of daily volumes (monthly total)          |
-
----
-
-## Technical Indicators
-
-All indicators are computed **after monthly aggregation**, using **monthly close prices**.
-
-### Indicators Calculated
-
-* **SMA_10**: 10-period Simple Moving Average
-* **SMA_20**: 20-period Simple Moving Average
-* **EMA_10**: 10-period Exponential Moving Average
-* **EMA_20**: 20-period Exponential Moving Average
+| Field  | Aggregation Strategy           |
+| ------ | ------------------------------ |
+| Open   | First trading day of the month |
+| Close  | Last trading day of the month  |
+| High   | Maximum price during the month |
+| Low    | Minimum price during the month |
+| Volume | Sum of daily volumes           |
 
 ---
 
-### EMA Calculation Formula
+## 📐 Technical Indicator Computation
 
-**Multiplier:**
+All indicators are calculated **after monthly aggregation**, using **monthly closing prices**.
+
+### Indicators Implemented
+
+* **SMA_10** – 10-period Simple Moving Average
+* **SMA_20** – 20-period Simple Moving Average
+* **EMA_10** – 10-period Exponential Moving Average
+* **EMA_20** – 20-period Exponential Moving Average
+
+---
+
+### 🔢 EMA Formula (Manually Implemented)
+
+**Multiplier**
 
 ```
 2 / (period + 1)
 ```
 
-**Formula:**
+**EMA Calculation**
 
 ```
-EMA_today = (Close_today × multiplier) + (EMA_yesterday × (1 - multiplier))
+EMA_today = (Close_today × multiplier)
+          + (EMA_yesterday × (1 − multiplier))
 ```
 
-Initial EMA values are seeded using the corresponding **SMA** for numerical stability.
-
-> ⚠️ Early rows will contain `NaN` values where insufficient historical data exists — this is expected behavior.
+📌 Initial EMA values are **seeded using SMA values** to ensure numerical stability.
+📉 Early periods naturally contain `NaN` values due to insufficient historical data.
 
 ---
 
-## Output
+## 📤 Output Specification
 
 **Directory:** `output/`
 
-**Files Generated:**
+**Generated Files**
 
 ```
 result_AAPL.csv
@@ -117,9 +141,7 @@ result_AMZN.csv
 ...
 ```
 
-**Rows per File:** Exactly **24 rows** (one per month)
-
-### Output Columns
+### Output Schema
 
 | Column |
 | ------ |
@@ -133,30 +155,34 @@ result_AMZN.csv
 | EMA_10 |
 | EMA_20 |
 
+* 📅 One row per month
+* 📊 Exactly **24 rows per ticker**
+* 🧹 Clean, analysis-ready format
+
 ---
 
-## Key Assumptions
+## 🧩 Design Assumptions
 
-* Dataset contains **complete daily records** with no missing months
-* All dates correspond to **valid trading days**
+* Complete daily trading data with **no missing months**
+* All dates correspond to **valid market trading days**
 * Data is **chronologically ordered per ticker**
-* Indicators are calculated using **raw close prices** (standard market practice)
+* Indicators are calculated using **raw close prices** (standard market convention)
 
 ---
 
-## Tech Stack
+## 🛠️ Technology Stack
 
-* **Programming Language:** Python
-* **Primary Library:** Pandas
-* **Processing Style:** Vectorized operations
+* **Language:** Python
+* **Core Library:** Pandas
+* **Computation Style:** Vectorized operations
 
-❌ **No external technical analysis libraries** (e.g., TA-Lib) are used or allowed.
+❌ **No external technical analysis libraries** (e.g., TA-Lib, pandas-ta)
 
 ---
 
-## How to Run
+## ▶️ How to Run the Pipeline
 
-1. Place the input dataset at:
+1. Place the input file at:
 
    ```
    data/stock_data.csv
@@ -168,17 +194,22 @@ result_AMZN.csv
    pip install -r requirements.txt
    ```
 
-3. Run the processing script from the project root:
+3. Execute the pipeline:
 
    ```bash
    python src/process_data.py
    ```
 
-📁 Monthly CSV files will be generated in the `output/` directory.
+📁 Monthly aggregated CSV files will be generated in the `output/` directory.
 
 ---
 
-## Author
+## 👨‍💻 Author
 
 **Jyothir Raghavalu Bhogi**
-🔗 [LinkedIn Profile]([https://www.linkedin.com/](https://www.linkedin.com/in/bhogi-jyothir-raghavalu/))
+📌 Data Engineering & Analytics
+🔗 [LinkedIn](https://www.linkedin.com/)
+
+---
+
+⭐ *This project is designed to reflect real-world data engineering standards and financial data processing best practices.*
