@@ -19,6 +19,7 @@ data-engineering-intern-assignment/
 ├── README.md                   # Project documentation
 ├── requirements.txt            # Dependencies
 └── .gitignore
+
 Input Data
 
 File: data/stock_data.csv
