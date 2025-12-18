@@ -181,4 +181,4 @@ result_AMZN.csv
 ## Author
 
 **Jyothir Raghavalu Bhogi**
-🔗 [LinkedIn Profile](https://www.linkedin.com/)
+🔗 [LinkedIn Profile]([https://www.linkedin.com/](https://www.linkedin.com/in/bhogi-jyothir-raghavalu/))
